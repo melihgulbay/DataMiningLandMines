@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import torch
+import keras
+from torch import nn, optim
+from torch.utils.data import DataLoader, TensorDataset, random_split
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression
@@ -10,6 +14,7 @@ from ucimlrepo import fetch_ucirepo
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.compose import ColumnTransformer
@@ -21,31 +26,35 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.feature_selection import SelectKBest, chi2, f_classif, mutual_info_classif
+from scipy.stats import spearmanr
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import label_binarize
+from sklearn.metrics import log_loss
+from sklearn.ensemble import IsolationForest
 
-# File path
+# Define the file path
 file_path = r'C:\Dataset.xls'
 
+# Read the Excel file into a Pandas DataFrame
 df = pd.read_excel(file_path)
 
 # Split data into features (X) and target variable (y)
-X = df[['V']]  # Features 
-y = df['M']  # Target variable
+X = df[['V', 'H', 'S']]  # Features: Voltage (V), High (H), Soil Type (S)
 
-# Splitting the dataset into the Training set and Test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Create and fit the Isolation Forest model
+isolation_forest = IsolationForest(contamination=0.05)  # Adjust contamination based on expected outlier percentage
+isolation_forest.fit(X)
 
-# Initialize logistic regression model
-logistic_model = LogisticRegression(max_iter=1000)
+# Predict outliers
+outliers = isolation_forest.predict(X)
 
-# Train the model
-logistic_model.fit(X_train, y_train)
+# Filter out outlier instances
+outlier_indices = outliers == -1
+outlier_instances = df[outlier_indices]
 
-# Predictions on the test set
-y_pred = logistic_model.predict(X_test)
-
-# Model evaluation
-accuracy = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred)
-
-print("Accuracy:", accuracy)
-print("Classification Report:\n", report)
+print("Outliers:")
+print(outlier_instances)
